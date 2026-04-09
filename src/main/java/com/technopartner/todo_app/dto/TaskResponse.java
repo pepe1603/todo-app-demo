@@ -8,7 +8,8 @@ public class TaskResponse {
     private Long id;
     private String title;
     private String description;
-    private boolean completed;
+    private String status;
+    private LocalDateTime completedAt;
     private LocalDateTime createdAt;
     private LocalDateTime dueDate;
 }

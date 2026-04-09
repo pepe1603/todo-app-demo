@@ -1,5 +1,6 @@
 package com.technopartner.todo_app.entity;
 
+import com.technopartner.todo_app.enums.TaskStatus;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
@@ -17,8 +18,12 @@ public class Task {
     
     private String description;
     
-    @Column(name = "is_completed")
-    private boolean completed = false;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private TaskStatus status = TaskStatus.PENDING;
+    
+    @Column(name = "completed_at")
+    private LocalDateTime completedAt;
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)

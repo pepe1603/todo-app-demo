@@ -4,12 +4,16 @@ import com.technopartner.todo_app.dto.TaskRequest;
 import com.technopartner.todo_app.dto.TaskResponse;
 import com.technopartner.todo_app.entity.Task;
 import com.technopartner.todo_app.entity.User;
+import com.technopartner.todo_app.enums.TaskStatus;
+import com.technopartner.todo_app.enums.TaskStatusTransition;
 import com.technopartner.todo_app.exception.ApiException;
+import com.technopartner.todo_app.exception.InvalidStateTransitionException;
 import com.technopartner.todo_app.repository.TaskRepository;
 import com.technopartner.todo_app.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -28,6 +32,7 @@ public class TaskService {
         task.setTitle(request.getTitle());
         task.setDescription(request.getDescription());
         task.setDueDate(request.getDueDate());
+        task.setStatus(TaskStatus.PENDING);
         task.setUser(user);
         
         return toResponse(taskRepository.save(task));
@@ -44,12 +49,7 @@ public class TaskService {
     }
     
     public TaskResponse updateTask(Long taskId, TaskRequest request, String userEmail) {
-        Task task = taskRepository.findById(taskId)
-                .orElseThrow(() -> ApiException.notFound("Tarea no encontrada"));
-        
-        if (!task.getUser().getEmail().equals(userEmail)) {
-            throw ApiException.unauthorized("No tienes permiso para modificar esta tarea");
-        }
+        Task task = getTaskForUser(taskId, userEmail);
         
         task.setTitle(request.getTitle());
         task.setDescription(request.getDescription());
@@ -60,7 +60,49 @@ public class TaskService {
         return toResponse(taskRepository.save(task));
     }
     
-    public TaskResponse toggleComplete(Long taskId, String userEmail) {
+    public TaskResponse changeStatus(Long taskId, TaskStatus newStatus, String userEmail) {
+        Task task = getTaskForUser(taskId, userEmail);
+        
+        TaskStatus currentStatus = task.getStatus();
+        TaskStatusTransition currentTransition = TaskStatusTransition.valueOf(currentStatus.name());
+        
+        if (!currentTransition.canTransitionTo(newStatus)) {
+            throw new InvalidStateTransitionException(currentStatus, newStatus);
+        }
+        
+        task.setStatus(newStatus);
+        
+        if (newStatus == TaskStatus.COMPLETED) {
+            task.setCompletedAt(LocalDateTime.now());
+        } else {
+            task.setCompletedAt(null);
+        }
+        
+        return toResponse(taskRepository.save(task));
+    }
+    
+    public TaskResponse startTask(Long taskId, String userEmail) {
+        return changeStatus(taskId, TaskStatus.IN_PROGRESS, userEmail);
+    }
+    
+    public TaskResponse completeTask(Long taskId, String userEmail) {
+        return changeStatus(taskId, TaskStatus.COMPLETED, userEmail);
+    }
+    
+    public TaskResponse cancelTask(Long taskId, String userEmail) {
+        return changeStatus(taskId, TaskStatus.CANCELLED, userEmail);
+    }
+    
+    public TaskResponse reopenTask(Long taskId, String userEmail) {
+        return changeStatus(taskId, TaskStatus.PENDING, userEmail);
+    }
+    
+    public void deleteTask(Long taskId, String userEmail) {
+        Task task = getTaskForUser(taskId, userEmail);
+        taskRepository.delete(task);
+    }
+    
+    private Task getTaskForUser(Long taskId, String userEmail) {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> ApiException.notFound("Tarea no encontrada"));
         
@@ -68,20 +110,7 @@ public class TaskService {
             throw ApiException.unauthorized("No tienes permiso para modificar esta tarea");
         }
         
-        task.setCompleted(!task.isCompleted());
-        
-        return toResponse(taskRepository.save(task));
-    }
-    
-    public void deleteTask(Long taskId, String userEmail) {
-        Task task = taskRepository.findById(taskId)
-                .orElseThrow(() -> ApiException.notFound("Tarea no encontrada"));
-        
-        if (!task.getUser().getEmail().equals(userEmail)) {
-            throw ApiException.unauthorized("No tienes permiso para eliminar esta tarea");
-        }
-        
-        taskRepository.delete(task);
+        return task;
     }
     
     private TaskResponse toResponse(Task task) {
@@ -89,7 +118,8 @@ public class TaskService {
         response.setId(task.getId());
         response.setTitle(task.getTitle());
         response.setDescription(task.getDescription());
-        response.setCompleted(task.isCompleted());
+        response.setStatus(task.getStatus().name());
+        response.setCompletedAt(task.getCompletedAt());
         response.setCreatedAt(task.getCreatedAt());
         response.setDueDate(task.getDueDate());
         return response;

@@ -2,7 +2,7 @@ spring:
   application:
     name: todo-app
   datasource:
-    url: jdbc:postgresql://localhost:5432/todoapp
+    url: ${URL_DATABASE_POSTGRESQL:}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
@@ -35,7 +35,7 @@ server:
 app:
   jwt:
     secret: ${JWT_SECRET:your-secret-key-here}
-    expiration: 900000
+    expiration: ${JWT_ACCESS_TOKEN_EXPIRATION:900000}
 
 springdoc:
   api-docs:
