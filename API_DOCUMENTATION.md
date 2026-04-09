@@ -425,6 +425,193 @@ Estados finales (sin salida): COMPLETED
 | 404 | Not Found - Recurso no encontrado |
 | 500 | Internal Server Error - Error interno del servidor |
 
+---
+
+## Vista de Tareas Detalladas
+
+Endpoints que consumen la vista `v_task_details` con campos calculados.
+
+**Nota:** Requiere crear la vista en PostgreSQL primero:
+```sql
+CREATE OR REPLACE VIEW v_task_details AS
+SELECT 
+    t.id, t.title, t.description, t.status,
+    t.created_at, t.due_date, t.completed_at,
+    t.user_id, u.email AS user_email, u.full_name AS user_full_name,
+    CASE WHEN t.due_date IS NULL OR t.status = 'COMPLETED' THEN NULL 
+         ELSE EXTRACT(DAY FROM (t.due_date - CURRENT_DATE)) END AS days_remaining,
+    CASE WHEN t.due_date IS NULL OR t.status = 'COMPLETED' THEN false 
+         WHEN t.due_date < CURRENT_DATE THEN true ELSE false END AS is_overdue,
+    CASE WHEN t.due_date IS NULL OR t.status = 'COMPLETED' THEN NULL 
+         WHEN t.due_date < CURRENT_DATE THEN EXTRACT(DAY FROM (CURRENT_DATE - t.due_date)) 
+         ELSE 0 END AS days_overdue
+FROM tasks t INNER JOIN users u ON t.user_id = u.id;
+```
+
+### Listar Tareas Detalladas
+
+Obtiene todas las tareas del usuario con campos calculados (días restantes, vencida, etc.).
+
+**Endpoint:** `GET /api/tasks/details`
+
+**Headers:** `Authorization: Bearer <token>`
+
+**Response - Éxito (200):**
+```json
+[
+  {
+    "id": 1,
+    "title": "Terminar proyecto",
+    "description": "Completar el desarrollo del API",
+    "status": "PENDING",
+    "createdAt": "2026-04-09T14:00:00",
+    "dueDate": "2026-04-15T18:00:00",
+    "completedAt": null,
+    "userId": 1,
+    "userEmail": "jose@example.com",
+    "userFullName": "Jose Perez",
+    "daysRemaining": 5,
+    "isOverdue": false,
+    "daysOverdue": 0
+  },
+  {
+    "id": 2,
+    "title": "Tarea vencida",
+    "description": "Esta tarea ya pasó",
+    "status": "PENDING",
+    "createdAt": "2026-04-01T10:00:00",
+    "dueDate": "2026-04-05T18:00:00",
+    "completedAt": null,
+    "userId": 1,
+    "userEmail": "jose@example.com",
+    "userFullName": "Jose Perez",
+    "daysRemaining": -4,
+    "isOverdue": true,
+    "daysOverdue": 4
+  }
+]
+```
+
+---
+
+### Listar Tareas por Estado
+
+Obtiene tareas filtradas por estado específico.
+
+**Endpoint:** `GET /api/tasks/details/status/{status}`
+
+**Headers:** `Authorization: Bearer <token>`
+
+**Estados válidos:** `PENDING`, `IN_PROGRESS`, `COMPLETED`, `CANCELLED`
+
+**Response - Éxito (200):**
+```json
+[
+  {
+    "id": 1,
+    "title": "Terminar proyecto",
+    "description": "Completar el desarrollo del API",
+    "status": "PENDING",
+    "createdAt": "2026-04-09T14:00:00",
+    "dueDate": "2026-04-15T18:00:00",
+    "completedAt": null,
+    "userId": 1,
+    "userEmail": "jose@example.com",
+    "userFullName": "Jose Perez",
+    "daysRemaining": 5,
+    "isOverdue": false,
+    "daysOverdue": 0
+  }
+]
+```
+
+---
+
+### Listar Tareas Vencidas
+
+Obtiene todas las tareas que han excedido su fecha límite.
+
+**Endpoint:** `GET /api/tasks/details/overdue`
+
+**Headers:** `Authorization: Bearer <token>`
+
+**Response - Éxito (200):**
+```json
+[
+  {
+    "id": 2,
+    "title": "Tarea vencida",
+    "description": "Esta tarea ya pasó",
+    "status": "PENDING",
+    "createdAt": "2026-04-01T10:00:00",
+    "dueDate": "2026-04-05T18:00:00",
+    "completedAt": null,
+    "userId": 1,
+    "userEmail": "jose@example.com",
+    "userFullName": "Jose Perez",
+    "daysRemaining": null,
+    "isOverdue": true,
+    "daysOverdue": 4
+  }
+]
+```
+
+---
+
+### Listar Todas las Tareas (Admin)
+
+Obtiene todas las tareas de todos los usuarios (sin filtro).
+
+**Endpoint:** `GET /api/tasks/details/all`
+
+**Headers:** `Authorization: Bearer <token>`
+
+**Response - Éxito (200):**
+```json
+[
+  {
+    "id": 1,
+    "title": "Terminar proyecto",
+    "status": "PENDING",
+    "userId": 1,
+    "userEmail": "jose@example.com",
+    "userFullName": "Jose Perez",
+    "daysRemaining": 5,
+    "isOverdue": false
+  },
+  {
+    "id": 3,
+    "title": "Tarea de otro usuario",
+    "status": "IN_PROGRESS",
+    "userId": 2,
+    "userEmail": "admin@example.com",
+    "userFullName": "Admin User",
+    "daysRemaining": 2,
+    "isOverdue": false
+  }
+]
+```
+
+---
+
+## Descripción de Campos de la Vista
+
+| Campo | Tipo | Descripción |
+|-------|------|--------------|
+| `id` | Long | ID de la tarea |
+| `title` | String | Título de la tarea |
+| `description` | String | Descripción de la tarea |
+| `status` | String | Estado de la tarea (PENDING, IN_PROGRESS, COMPLETED, CANCELLED) |
+| `createdAt` | DateTime | Fecha de creación |
+| `dueDate` | DateTime | Fecha límite |
+| `completedAt` | DateTime | Fecha de completado (nullable) |
+| `userId` | Long | ID del usuario |
+| `userEmail` | String | Email del usuario |
+| `userFullName` | String | Nombre completo del usuario |
+| `daysRemaining` | Integer | Días restantes para vencer (null si no hay fecha límite o ya completada) |
+| `isOverdue` | Boolean | true si la tarea está vencida |
+| `daysOverdue` | Integer | Días de retraso (0 si no está vencida) |
+
 ## Swagger
 
 Accede a la documentación interactiva en:
