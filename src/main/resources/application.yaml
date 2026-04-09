@@ -3,8 +3,8 @@ spring:
     name: todo-app
   datasource:
     url: jdbc:postgresql://localhost:5432/todoapp
-    username: postgres
-    password: postgres
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -15,13 +15,13 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
   data:
     redis:
-      host: localhost
-      port: 6379
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
   mail:
     host: smtp.gmail.com
     port: 587
-    username: ${MAIL_USERNAME:tu-email@gmail.com}
-    password: ${MAIL_PASSWORD:tu-password}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
     properties:
       mail:
         smtp:
@@ -30,12 +30,12 @@ spring:
             enable: true
 
 server:
-  port: 8080
+  port: 9090
 
 app:
   jwt:
-    secret: technopartner-secret-key-muy-larga-para-firmar-tokens-jwt-2024-peru
-    expiration: 86400000
+    secret: ${JWT_SECRET:your-secret-key-here}
+    expiration: 900000
 
 springdoc:
   api-docs:

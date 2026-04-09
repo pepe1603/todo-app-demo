@@ -1,6 +1,7 @@
 package com.technopartner.todo_app.config;
 
-import com.technopartner.todo_app.security.CustomUserDetailsService;
+import com.technopartner.todo_app.entity.User;
+import com.technopartner.todo_app.repository.UserRepository;
 import com.technopartner.todo_app.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -17,13 +18,16 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
     
-    private final CustomUserDetailsService userDetailsService;
+    private final UserRepository userRepository;
     private final JwtAuthenticationFilter jwtFilter;
     
     @Bean
@@ -43,10 +47,18 @@ public class SecurityConfig {
     
     @Bean
     public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(userDetailsService);
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService());
         authProvider.setPasswordEncoder(passwordEncoder());
         return authProvider;
+    }
+    
+    @Bean
+    public UserDetailsService userDetailsService() {
+        return email -> {
+            User user = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + email));
+            return user;
+        };
     }
     
     @Bean

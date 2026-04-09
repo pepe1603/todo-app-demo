@@ -4,6 +4,7 @@ import com.technopartner.todo_app.dto.TaskRequest;
 import com.technopartner.todo_app.dto.TaskResponse;
 import com.technopartner.todo_app.entity.Task;
 import com.technopartner.todo_app.entity.User;
+import com.technopartner.todo_app.exception.ApiException;
 import com.technopartner.todo_app.repository.TaskRepository;
 import com.technopartner.todo_app.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +22,7 @@ public class TaskService {
     
     public TaskResponse createTask(TaskRequest request, String userEmail) {
         User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> ApiException.notFound("Usuario no encontrado"));
         
         Task task = new Task();
         task.setTitle(request.getTitle());
@@ -34,7 +35,7 @@ public class TaskService {
     
     public List<TaskResponse> getTasks(String userEmail) {
         User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> ApiException.notFound("Usuario no encontrado"));
         
         return taskRepository.findByUserId(user.getId())
                 .stream()
@@ -44,10 +45,10 @@ public class TaskService {
     
     public TaskResponse updateTask(Long taskId, TaskRequest request, String userEmail) {
         Task task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new RuntimeException("Tarea no encontrada"));
+                .orElseThrow(() -> ApiException.notFound("Tarea no encontrada"));
         
         if (!task.getUser().getEmail().equals(userEmail)) {
-            throw new RuntimeException("No tienes permiso para modificar esta tarea");
+            throw ApiException.unauthorized("No tienes permiso para modificar esta tarea");
         }
         
         task.setTitle(request.getTitle());
@@ -61,10 +62,10 @@ public class TaskService {
     
     public TaskResponse toggleComplete(Long taskId, String userEmail) {
         Task task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new RuntimeException("Tarea no encontrada"));
+                .orElseThrow(() -> ApiException.notFound("Tarea no encontrada"));
         
         if (!task.getUser().getEmail().equals(userEmail)) {
-            throw new RuntimeException("No tienes permiso para modificar esta tarea");
+            throw ApiException.unauthorized("No tienes permiso para modificar esta tarea");
         }
         
         task.setCompleted(!task.isCompleted());
@@ -74,10 +75,10 @@ public class TaskService {
     
     public void deleteTask(Long taskId, String userEmail) {
         Task task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new RuntimeException("Tarea no encontrada"));
+                .orElseThrow(() -> ApiException.notFound("Tarea no encontrada"));
         
         if (!task.getUser().getEmail().equals(userEmail)) {
-            throw new RuntimeException("No tienes permiso para eliminar esta tarea");
+            throw ApiException.unauthorized("No tienes permiso para eliminar esta tarea");
         }
         
         taskRepository.delete(task);
