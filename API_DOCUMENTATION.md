@@ -618,3 +618,235 @@ Accede a la documentación interactiva en:
 ```
 http://localhost:9090/swagger-ui.html
 ```
+
+---
+
+## Verificación de Cuenta con OTP
+
+Sistema de verificación de cuenta mediante código OTP de 6 dígitos enviado por email.
+
+### Registrar Usuario
+
+Crea un usuario no verificado (requiere verificación OTP).
+
+**Endpoint:** `POST /api/auth/register`
+
+**Request:**
+```json
+{
+  "fullName": "Jose Perez",
+  "email": "jose@example.com",
+  "password": "password123"
+}
+```
+
+**Response - Éxito (200):**
+```json
+{
+  "message": "Usuario creado. Por favor verifica tu cuenta con el código enviado a tu email.",
+  "userId": 1,
+  "email": "jose@example.com"
+}
+```
+
+**Response - Error (400):**
+```json
+{
+  "status": 400,
+  "message": "El email ya está registrado",
+  "timestamp": "2026-04-09T14:00:00"
+}
+```
+
+---
+
+### Verificar Cuenta
+
+Verifica la cuenta del usuario con el código OTP.
+
+**Endpoint:** `POST /api/auth/verify`
+
+**Request:**
+```json
+{
+  "email": "jose@example.com",
+  "otp": "123456"
+}
+```
+
+**Response - Éxito (200):**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiJ9...",
+  "type": "Bearer",
+  "userId": 1,
+  "email": "jose@example.com",
+  "fullName": "Jose Perez"
+}
+```
+
+**Response - Error (400):**
+```json
+{
+  "status": 400,
+  "message": "Código inválido. Intentos restantes: 2",
+  "timestamp": "2026-04-09T14:00:00"
+}
+```
+
+**Response - Error (400):**
+```json
+{
+  "status": 400,
+  "message": "La cuenta ya está verificada",
+  "timestamp": "2026-04-09T14:00:00"
+}
+```
+
+---
+
+### Reenviar Código OTP
+
+Solicita un nuevo código OTP si el anterior expiró o se perdió.
+
+**Endpoint:** `POST /api/auth/resend-otp`
+
+**Request:**
+```json
+"jose@example.com"
+```
+
+**Response - Éxito (200):**
+```json
+"Código OTP enviado"
+```
+
+**Response - Error (400):**
+```json
+{
+  "status": 400,
+  "message": "Ya solicitaste un código. Espera un momento e intenta de nuevo.",
+  "timestamp": "2026-04-09T14:00:00"
+}
+```
+
+**Response - Error (400):**
+```json
+{
+  "status": 400,
+  "message": "La cuenta ya está verificada",
+  "timestamp": "2026-04-09T14:00:00"
+}
+```
+
+---
+
+### Iniciar Sesión
+
+Solo usuarios verificados pueden iniciar sesión.
+
+**Endpoint:** `POST /api/auth/login`
+
+**Request:**
+```json
+{
+  "email": "jose@example.com",
+  "password": "password123"
+}
+```
+
+**Response - Éxito (200):**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiJ9...",
+  "type": "Bearer",
+  "userId": 1,
+  "email": "jose@example.com",
+  "fullName": "Jose Perez"
+}
+```
+
+**Response - Error (401):**
+```json
+{
+  "status": 401,
+  "message": "Por favor verifica tu cuenta primero. Solicita un nuevo código OTP.",
+  "timestamp": "2026-04-09T14:00:00"
+}
+```
+
+**Response - Error (401):**
+```json
+{
+  "status": 401,
+  "message": "Credenciales inválidas",
+  "timestamp": "2026-04-09T14:00:00"
+}
+```
+
+---
+
+## Características del Sistema OTP
+
+- **Código OTP:** 6 dígitos generados aleatoriamente
+- **Expiración:** 5 minutos
+- **Intentos máximos:** 3 intentos por código
+- **Almacenamiento:** Redis para gestión de códigos y rate limiting
+- **Envío:** Email asíncrono
+
+### Rate Limiting con Redis
+
+| Operación | Límite |
+|-----------|--------|
+| Intentos de OTP | 3 por código |
+| Solicitar nuevo código | 1 cada 5 minutos por email |
+| Almacenamiento OTP | 5 minutos en Redis |
+
+---
+
+## Caché con Redis
+
+La API utiliza Redis para caching de respuestas frecuentes.
+
+### Endpoints con Caché
+
+| Endpoint | TTL | Descripción |
+|----------|-----|-------------|
+| `GET /api/tasks` | 2 min | Lista de tareas del usuario |
+| `GET /api/tasks/details` | 1 min | Vista detallada de tareas |
+
+### Invalidación de Caché
+
+El caché se invalida automáticamente cuando se:
+- Crea una nueva tarea
+- Actualiza una tarea
+- Cambia el estado de una tarea
+- Elimina una tarea
+
+---
+
+## Configuración de Variables de Entorno
+
+```yaml
+# Base de datos
+URL_DATABASE_POSTGRESQL: postgresql://...
+DB_USERNAME: postgres
+DB_PASSWORD: password
+
+# Redis
+REDIS_HOST: localhost
+REDIS_PORT: 6379
+
+# Email
+MAIL_USERNAME: your-email@gmail.com
+MAIL_PASSWORD: your-app-password
+
+# JWT
+JWT_SECRET: your-secret-key
+JWT_ACCESS_TOKEN_EXPIRATION: 900000
+
+# OTP
+app.otp.length: 6
+app.otp.expiration-minutes: 5
+app.otp.max-attempts: 3
+```
