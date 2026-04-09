@@ -27,8 +27,14 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private String fullName;
     
+    @Column(name = "is_verified", nullable = false)
+    private boolean verified = false;
+    
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+    
+    @Column(name = "verified_at")
+    private LocalDateTime verifiedAt;
     
     @PrePersist
     protected void onCreate() {
@@ -62,6 +68,6 @@ public class User implements UserDetails {
     
     @Override
     public boolean isEnabled() {
-        return true;
+        return verified;
     }
 }

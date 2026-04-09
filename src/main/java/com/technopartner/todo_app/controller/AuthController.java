@@ -15,8 +15,19 @@ public class AuthController {
     private final AuthService authService;
     
     @PostMapping("/register")
-    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterRequest request) {
         return ResponseEntity.ok(authService.register(request));
+    }
+    
+    @PostMapping("/verify")
+    public ResponseEntity<AuthResponse> verify(@Valid @RequestBody VerifyOtpRequest request) {
+        return ResponseEntity.ok(authService.verifyOtp(request));
+    }
+    
+    @PostMapping("/resend-otp")
+    public ResponseEntity<String> resendOtp(@RequestBody String email) {
+        authService.resendOtp(email.replace("\"", ""));
+        return ResponseEntity.ok("Código OTP enviado");
     }
     
     @PostMapping("/login")

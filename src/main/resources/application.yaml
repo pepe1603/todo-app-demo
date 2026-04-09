@@ -36,6 +36,10 @@ app:
   jwt:
     secret: ${JWT_SECRET:your-secret-key-here}
     expiration: ${JWT_ACCESS_TOKEN_EXPIRATION:900000}
+  otp:
+    length: 6
+    expiration-minutes: 5
+    max-attempts: 3
 
 springdoc:
   api-docs:
