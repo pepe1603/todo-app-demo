@@ -11,8 +11,6 @@ import com.technopartner.todo_app.exception.InvalidStateTransitionException;
 import com.technopartner.todo_app.repository.TaskRepository;
 import com.technopartner.todo_app.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -26,7 +24,7 @@ public class TaskService {
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
     
-    @CacheEvict(value = "tasks", key = "#userEmail")
+    // Sin @CacheEvict para evitar errores de serialización
     public TaskResponse createTask(TaskRequest request, String userEmail) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> ApiException.notFound("Usuario no encontrado"));
@@ -41,7 +39,7 @@ public class TaskService {
         return toResponse(taskRepository.save(task));
     }
     
-    @Cacheable(value = "tasks", key = "#userEmail")
+    // Sin caché para evitar errores de serialización con Redis
     public List<TaskResponse> getTasks(String userEmail) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> ApiException.notFound("Usuario no encontrado"));
@@ -52,7 +50,6 @@ public class TaskService {
                 .collect(Collectors.toList());
     }
     
-    @CacheEvict(value = "tasks", key = "#userEmail")
     public TaskResponse updateTask(Long taskId, TaskRequest request, String userEmail) {
         Task task = getTaskForUser(taskId, userEmail);
         
@@ -65,7 +62,6 @@ public class TaskService {
         return toResponse(taskRepository.save(task));
     }
     
-    @CacheEvict(value = "tasks", key = "#userEmail")
     public TaskResponse changeStatus(Long taskId, TaskStatus newStatus, String userEmail) {
         Task task = getTaskForUser(taskId, userEmail);
         
@@ -103,7 +99,6 @@ public class TaskService {
         return changeStatus(taskId, TaskStatus.PENDING, userEmail);
     }
     
-    @CacheEvict(value = "tasks", key = "#userEmail")
     public void deleteTask(Long taskId, String userEmail) {
         Task task = getTaskForUser(taskId, userEmail);
         taskRepository.delete(task);
