@@ -2,6 +2,7 @@ package com.technopartner.todo_app.controller;
 
 import com.technopartner.todo_app.dto.TaskRequest;
 import com.technopartner.todo_app.dto.TaskResponse;
+import com.technopartner.todo_app.dto.TaskStatsResponse;
 import com.technopartner.todo_app.enums.TaskStatus;
 import com.technopartner.todo_app.service.TaskService;
 import jakarta.validation.Valid;
@@ -30,6 +31,11 @@ public class TaskController {
     @GetMapping
     public ResponseEntity<List<TaskResponse>> getTasks(Authentication auth) {
         return ResponseEntity.ok(taskService.getTasks(auth.getName()));
+    }
+    
+    @GetMapping("/stats")
+    public ResponseEntity<TaskStatsResponse> getStats(Authentication auth) {
+        return ResponseEntity.ok(taskService.getStats(auth.getName()));
     }
     
     @PutMapping("/{id}")

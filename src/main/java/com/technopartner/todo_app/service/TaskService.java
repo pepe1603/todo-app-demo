@@ -2,6 +2,7 @@ package com.technopartner.todo_app.service;
 
 import com.technopartner.todo_app.dto.TaskRequest;
 import com.technopartner.todo_app.dto.TaskResponse;
+import com.technopartner.todo_app.dto.TaskStatsResponse;
 import com.technopartner.todo_app.entity.Task;
 import com.technopartner.todo_app.entity.User;
 import com.technopartner.todo_app.enums.TaskStatus;
@@ -102,6 +103,54 @@ public class TaskService {
     public void deleteTask(Long taskId, String userEmail) {
         Task task = getTaskForUser(taskId, userEmail);
         taskRepository.delete(task);
+    }
+    
+    public TaskStatsResponse getStats(String userEmail) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> ApiException.notFound("Usuario no encontrado"));
+        
+        Long userId = user.getId();
+        long total = taskRepository.countByUserId(userId);
+        
+        if (total == 0) {
+            return TaskStatsResponse.builder()
+                    .total(0L)
+                    .pending(0L)
+                    .inProgress(0L)
+                    .completed(0L)
+                    .cancelled(0L)
+                    .overdue(0L)
+                    .completionRate(0.0)
+                    .build();
+        }
+        
+        long pending = taskRepository.countByUserIdAndStatus(userId, TaskStatus.PENDING);
+        long inProgress = taskRepository.countByUserIdAndStatus(userId, TaskStatus.IN_PROGRESS);
+        long completed = taskRepository.countByUserIdAndStatus(userId, TaskStatus.COMPLETED);
+        long cancelled = taskRepository.countByUserIdAndStatus(userId, TaskStatus.CANCELLED);
+        
+        long overdue = taskRepository.countByUserIdAndStatusAndDueDateBefore(
+                userId, TaskStatus.COMPLETED, LocalDateTime.now());
+        overdue += taskRepository.countByUserIdAndStatusAndDueDateBefore(
+                userId, TaskStatus.PENDING, LocalDateTime.now());
+        
+        long notCompleted = pending + inProgress;
+        long overdueFinal = taskRepository.countByUserIdAndStatusAndDueDateBefore(
+                userId, TaskStatus.PENDING, LocalDateTime.now())
+                + taskRepository.countByUserIdAndStatusAndDueDateBefore(
+                userId, TaskStatus.IN_PROGRESS, LocalDateTime.now());
+        
+        double completionRate = (completed * 100.0) / total;
+        
+        return TaskStatsResponse.builder()
+                .total(total)
+                .pending(pending)
+                .inProgress(inProgress)
+                .completed(completed)
+                .cancelled(cancelled)
+                .overdue(overdueFinal)
+                .completionRate(completionRate)
+                .build();
     }
     
     private Task getTaskForUser(Long taskId, String userEmail) {
