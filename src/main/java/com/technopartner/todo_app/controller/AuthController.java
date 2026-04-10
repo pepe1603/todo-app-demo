@@ -25,8 +25,8 @@ public class AuthController {
     }
     
     @PostMapping("/resend-otp")
-    public ResponseEntity<String> resendOtp(@RequestBody String email) {
-        authService.resendOtp(email.replace("\"", ""));
+    public ResponseEntity<String> resendOtp(@Valid @RequestBody EmailRequest email) {
+        authService.resendOtp(email.getEmail());
         return ResponseEntity.ok("Código OTP enviado");
     }
     

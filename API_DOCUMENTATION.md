@@ -747,7 +747,9 @@ Solicita un nuevo código OTP si el anterior expiró o se perdió.
 
 **Request:**
 ```json
-"jose@example.com"
+{
+  "email": "jose@example.com"
+}
 ```
 
 **Response - Éxito (200):**
