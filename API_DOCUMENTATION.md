@@ -383,6 +383,40 @@ Elimina una tarea existente.
 
 ---
 
+### Obtener Estadísticas de Tareas
+
+Obtiene estadísticas resumen de las tareas del usuario.
+
+**Endpoint:** `GET /api/tasks/stats`
+
+**Headers:** `Authorization: Bearer <token>`
+
+**Response - Éxito (200):**
+```json
+{
+  "total": 10,
+  "pending": 5,
+  "inProgress": 2,
+  "completed": 3,
+  "cancelled": 0,
+  "overdue": 1,
+  "completionRate": 30.0
+}
+```
+
+**Descripción de campos:**
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `total` | Long | Total de tareas |
+| `pending` | Long | Tareas pendientes |
+| `inProgress` | Long | Tareas en progreso |
+| `completed` | Long | Tareas completadas |
+| `cancelled` | Long | Tareas canceladas |
+| `overdue` | Long | Tareas vencidas (no completadas y fecha límite pasada) |
+| `completionRate` | Double | Porcentaje de tareas completadas |
+
+---
+
 ## Diagrama de Transiciones de Estado
 
 ```
