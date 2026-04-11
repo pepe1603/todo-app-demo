@@ -33,4 +33,24 @@ public class OtpEmailService {
             log.error("Error al enviar email con OTP a {}: {}", email, e.getMessage());
         }
     }
+    
+    @Async
+    public void sendPasswordResetEmail(String email, String resetToken) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(email);
+            message.setSubject("Recuperación de contraseña - TechnoPartner");
+            message.setText(String.format(
+                "Para recuperar tu contraseña, usa el siguiente token:\n\n%s\n\n" +
+                "Este token expirará en 15 minutos.\n\n" +
+                "Si no solicitaste este código, por favor ignora este mensaje.",
+                resetToken
+            ));
+            
+            mailSender.send(message);
+            log.info("Email de recuperación de contraseña enviado a {}", email);
+        } catch (Exception e) {
+            log.error("Error al enviar email de recuperación a {}: {}", email, e.getMessage());
+        }
+    }
 }

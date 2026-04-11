@@ -822,6 +822,114 @@ Solo usuarios verificados pueden iniciar sesión.
 
 ---
 
+## Recuperación de Contraseña
+
+Sistema de recuperación de contraseña para usuarios verificados. Token de un solo uso con expiración de 15 minutos.
+
+### Requisito
+
+El usuario debe haber verificado su cuenta previamente (`user.isVerified = true`).
+
+### Solicitar Recuperación de Contraseña
+
+Envía un token de recuperación al email del usuario.
+
+**Endpoint:** `POST /api/auth/forgot-password`
+
+**Request:**
+```json
+{
+  "email": "jose@example.com"
+}
+```
+
+**Response - Éxito (200):**
+```json
+"Código de recuperación enviado a tu email"
+```
+
+**Response - Error (400):**
+```json
+{
+  "status": 400,
+  "message": "Primero debes verificar tu cuenta antes de recuperar la contraseña",
+  "timestamp": "2026-04-11T10:00:00"
+}
+```
+
+**Response - Error (400) - Rate limit:**
+```json
+{
+  "status": 400,
+  "message": "Ya solicitaste un código de recuperación. Espera 15 minutos e intenta de nuevo.",
+  "timestamp": "2026-04-11T10:00:00"
+}
+```
+
+**Response - Error (404):**
+```json
+{
+  "status": 404,
+  "message": "Usuario no encontrado",
+  "timestamp": "2026-04-11T10:00:00"
+}
+```
+
+---
+
+### Reestablecer Contraseña
+
+Actualiza la contraseña usando el token de recuperación.
+
+**Endpoint:** `POST /api/auth/reset-password`
+
+**Request:**
+```json
+{
+  "token": "a1b2c3d4e5f6...",
+  "newPassword": "nuevaContrasena123"
+}
+```
+
+**Response - Éxito (200):**
+```json
+"Contraseña actualizada correctamente"
+```
+
+**Response - Error (400) - Token inválido:**
+```json
+{
+  "status": 400,
+  "message": "Token inválido o expirado",
+  "timestamp": "2026-04-11T10:00:00"
+}
+```
+
+**Response - Error (400) - Intentos agotados:**
+```json
+{
+  "status": 400,
+  "message": "Has excedido los intentos máximos. Solicita un nuevo código de recuperación.",
+  "timestamp": "2026-04-11T10:00:00"
+}
+```
+
+---
+
+### Características del Sistema de Recuperación
+
+| Característica | Valor |
+|-------------|-------|
+| Token | 32 caracteres hexadecimales |
+| Expiración | 15 minutos |
+| Intentos máximos | 3 por token |
+| Rate limiting | 1 solicitud cada 15 minutos por email |
+| Uso | Single-use (se elimina después de usar) |
+
+**Nota:** El token se elimina de Redis inmediatamente después de usarlo exitosamente, por lo que no puede ser reutilizado.
+
+---
+
 ## Características del Sistema OTP
 
 - **Código OTP:** 6 dígitos generados aleatoriamente
