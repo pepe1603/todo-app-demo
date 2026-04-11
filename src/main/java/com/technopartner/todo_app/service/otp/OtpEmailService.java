@@ -41,8 +41,8 @@ public class OtpEmailService {
             message.setTo(email);
             message.setSubject("Recuperación de contraseña - TechnoPartner");
             message.setText(String.format(
-                "Para recuperar tu contraseña, usa el siguiente token:\n\n%s\n\n" +
-                "Este token expirará en 15 minutos.\n\n" +
+                "Tu código de recuperación de contraseña es: %s\n\n" +
+                "Este código expirará en 15 minutos.\n\n" +
                 "Si no solicitaste este código, por favor ignora este mensaje.",
                 resetToken
             ));

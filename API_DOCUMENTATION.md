@@ -886,7 +886,7 @@ Actualiza la contraseña usando el token de recuperación.
 **Request:**
 ```json
 {
-  "token": "a1b2c3d4e5f6...",
+  "token": "123456",
   "newPassword": "nuevaContrasena123"
 }
 ```
@@ -920,9 +920,9 @@ Actualiza la contraseña usando el token de recuperación.
 
 | Característica | Valor |
 |-------------|-------|
-| Token | 32 caracteres hexadecimales |
+| Código | 6 dígitos numéricos |
 | Expiración | 15 minutos |
-| Intentos máximos | 3 por token |
+| Intentos máximos | 3 por código |
 | Rate limiting | 1 solicitud cada 15 minutos por email |
 | Uso | Single-use (se elimina después de usar) |
 
