@@ -37,7 +37,7 @@ public class AuthService {
     private static final String RESET_TOKEN_PREFIX = "reset:";
     private static final String RESET_ATTEMPTS_PREFIX = "reset:attempts:";
     private static final String RESET_RATE_PREFIX = "reset:rate:";
-    private static final int RESET_TOKEN_LENGTH = 6;
+    private static final int RESET_TOKEN_LENGTH = 8;
     private static final int RESET_TOKEN_EXPIRATION_MINUTES = 15;
     private static final int RESET_MAX_ATTEMPTS = 3;
     
@@ -195,9 +195,10 @@ public class AuthService {
     }
     
     private String generateResetToken() {
+        String chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < RESET_TOKEN_LENGTH; i++) {
-            sb.append(SECURE_RANDOM.nextInt(10));
+            sb.append(chars.charAt(SECURE_RANDOM.nextInt(chars.length())));
         }
         return sb.toString();
     }
