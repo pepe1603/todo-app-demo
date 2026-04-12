@@ -1017,6 +1017,7 @@ El caché se invalida automáticamente cuando se:
 ## Configuración de Variables de Entorno
 
 ```yaml
+
 # Base de datos
 URL_DATABASE_POSTGRESQL: postgresql://...
 DB_USERNAME: postgres
@@ -1039,3 +1040,43 @@ app.otp.length: 6
 app.otp.expiration-minutes: 5
 app.otp.max-attempts: 3
 ```
+## Ejemplo de .env
+ Sí usa Enviroments ya sea en docker o servidor dedicado cargarlo desde archivo ~/.bashrc.
+
+```yaml
+
+URL_CORS_ORIGINS=localhost:/3000
+
+# DATABASE
+URL_DATABASE_POSTGRESQL=jdbc:postgresq//..
+DB_USERNAME=username_postgres
+DB_PASSWORD=my_password_postgres
+
+# MAIL - Si usan Servicios SMTP (para producción - descomentar en VPS/Docker)
+# MAIL_HOST=smtp.host_my_server.com
+# MAIL_PORT=port_smpt
+# MAIL_USERNAME=user_name_service
+# MAIL_PASSWORD=password_service_smtp
+# MAIL_FROM=desitnatario_o_dominio.io
+
+# MAIL - Gmail (para pruebas locales recomiendo usar google-smpt)
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=myuser@gmail.com
+MAIL_PASSWORD=mypasswd_generate
+MAIL_FROM=myuser@gmail.com
+
+# REDIS (para puerbas locales)
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=
+#desahbilitar en redis local
+REDIS_SSL_ENABLED=true
+
+# SECURITY
+JWT_SECRET=my_secret_jwt_key
+JWT_ACCESS_TOKEN_EXPIRATION=900000 #15min.
+```
+
+
+
