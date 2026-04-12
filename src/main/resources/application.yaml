@@ -45,8 +45,6 @@ app:
     length: 6
     expiration-minutes: 5
     max-attempts: 3
-  cors:
-    origins: ${CORS_ORIGINS:}
 
 springdoc:
   api-docs:
