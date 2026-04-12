@@ -19,12 +19,11 @@ spring:
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
       ssl:
-        enabled: ${REDIS_SSL_ENABLED:false}
-
+        enabled: ${REDIS_SSL_ENABLED:true} # Por defecto true para Upstash
   mail:
-    host: smtp.gmail.com
-    port: 587
-    username: ${MAIL_USERNAME:}
+    host: ${MAIL_HOST:smtp.resend.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:resend}
     password: ${MAIL_PASSWORD:}
     properties:
       mail:
@@ -32,9 +31,10 @@ spring:
           auth: true
           starttls:
             enable: true
+            required: true
 
 server:
-  port: 9090
+  port: ${PORT:9090}
 
 app:
   jwt:
@@ -47,6 +47,7 @@ app:
 
 springdoc:
   api-docs:
+    enabled: ${SPRINGDOC_ENABLED:true}
     path: /api-docs
   swagger-ui:
     path: /swagger-ui.html
