@@ -123,18 +123,33 @@ public class AuthService {
         otpEmailService.sendOtpEmail(email, otp);
     }
     
-    public void requestPasswordReset(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> ApiException.notFound("Usuario no encontrado"));
+    public PasswordResetResponse requestPasswordReset(String email) {
+        boolean emailExists = userRepository.findByEmail(email).isPresent();
+        
+        if (!emailExists) {
+            log.warn("Solicitud de recuperación para email no registrado: {}", email);
+            return new PasswordResetResponse(
+                    "Si el email está registrado, recibirás un código de recuperación",
+                    true
+            );
+        }
+        
+        User user = userRepository.findByEmail(email).get();
         
         if (!user.isVerified()) {
-            throw ApiException.badRequest("Primero debes verificar tu cuenta antes de recuperar la contraseña");
+            return new PasswordResetResponse(
+                    "Si el email está registrado y verificado, recibirás un código de recuperación",
+                    true
+            );
         }
         
         String rateKey = RESET_RATE_PREFIX + email;
         if (redisTemplate.hasKey(rateKey)) {
             Long ttl = redisTemplate.getExpire(rateKey, TimeUnit.MINUTES);
-            throw ApiException.badRequest("Ya solicitaste un código de recuperación. Espera " + ttl + " minutos e intenta de nuevo.");
+            return new PasswordResetResponse(
+                    "Ya solicitaste un código de recuperación. Espera " + ttl + " minutos e intenta de nuevo.",
+                    false
+            );
         }
         
         String resetToken = generateResetToken();
@@ -145,39 +160,58 @@ public class AuthService {
         redisTemplate.opsForValue().set(rateKey, "1", RESET_TOKEN_EXPIRATION_MINUTES, TimeUnit.MINUTES);
         
         otpEmailService.sendPasswordResetEmail(email, resetToken);
+        
+        return new PasswordResetResponse(
+                "Si el email está registrado y verificado, recibirás un código de recuperación",
+                true
+        );
     }
     
-    public void resetPassword(String token, String newPassword) {
-        String email = findEmailByResetToken(token);
+    public PasswordResetResponse verifyResetCode(String code) {
+        String email = findEmailByResetToken(code);
         if (email == null) {
-            throw ApiException.badRequest("Token inválido o expirado");
+            String attemptsKey = RESET_ATTEMPTS_PREFIX + "global";
+            incrementResetAttempts("unknown", attemptsKey);
+            return new PasswordResetResponse("Código inválido o expirado", false);
         }
-        
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> ApiException.notFound("Usuario no encontrado"));
         
         String attemptsKey = RESET_ATTEMPTS_PREFIX + email;
         int attempts = getResetAttempts(email, attemptsKey);
         if (attempts >= RESET_MAX_ATTEMPTS) {
-            throw ApiException.badRequest("Has excedido los intentos máximos. Solicita un nuevo código de recuperación.");
+            return new PasswordResetResponse("Has excedido los intentos máximos. Solicita un nuevo código.", false);
         }
         
         String tokenKey = RESET_TOKEN_PREFIX + email;
         String storedToken = redisTemplate.opsForValue().get(tokenKey);
         
-        if (storedToken == null || !storedToken.equals(token)) {
+        if (storedToken == null || !storedToken.equals(code)) {
             incrementResetAttempts(email, attemptsKey);
             int remaining = RESET_MAX_ATTEMPTS - getResetAttempts(email, attemptsKey);
-            throw ApiException.badRequest("Token inválido. Intentos restantes: " + remaining);
+            return new PasswordResetResponse("Código inválido. Intentos restantes: " + remaining, false);
+        }
+        
+        redisTemplate.delete(tokenKey);
+        
+        return new PasswordResetResponse("Código verificado correctamente", true);
+    }
+    
+    public PasswordResetResponse resetPassword(String email, String newPassword) {
+        User user = userRepository.findByEmail(email)
+                .orElse(null);
+        
+        if (user == null) {
+            return new PasswordResetResponse("Usuario no encontrado", false);
         }
         
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
         
-        redisTemplate.delete(tokenKey);
+        String attemptsKey = RESET_ATTEMPTS_PREFIX + email;
         redisTemplate.delete(attemptsKey);
         
         log.info("Contraseña reestablecida para {}", email);
+        
+        return new PasswordResetResponse("Contraseña actualizada correctamente", true);
     }
     
     private String findEmailByResetToken(String token) {
@@ -213,5 +247,26 @@ public class AuthService {
         if (attempts != null && attempts == 1) {
             redisTemplate.expire(attemptsKey, RESET_TOKEN_EXPIRATION_MINUTES * 2, TimeUnit.MINUTES);
         }
+    }
+
+    public PasswordResetResponse verifyResetToken(String token) {
+        String email = findEmailByResetToken(token);
+        if (email == null) {
+            return new PasswordResetResponse("Token inválido o expirado", false);
+        }
+
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null) {
+            return new PasswordResetResponse("Token inválido o expirado", false);
+        }
+
+        String tokenKey = RESET_TOKEN_PREFIX + email;
+        String storedToken = redisTemplate.opsForValue().get(tokenKey);
+
+        if (storedToken == null || !storedToken.equals(token)) {
+            return new PasswordResetResponse("Token inválido o expirado", false);
+        }
+
+        return new PasswordResetResponse("Token válido", true);
     }
 }

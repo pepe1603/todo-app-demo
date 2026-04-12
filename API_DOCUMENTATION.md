@@ -822,15 +822,28 @@ Solo usuarios verificados pueden iniciar sesión.
 
 ---
 
-## Recuperación de Contraseña
+## Recuperación de Contraseña (3 Pasos)
 
-Sistema de recuperación de contraseña para usuarios verificados. Token de un solo uso con expiración de 15 minutos.
+Sistema de recuperación de contraseña en 3 pasos para usuarios verificados.
 
-### Requisito
+### Flujo Completo
 
-El usuario debe haber verificado su cuenta previamente (`user.isVerified = true`).
+| Paso | Endpoint | Descripción |
+|-----|----------|-------------|
+| 1 | `POST /api/auth/forgot-password` | Solicitar código de recuperación |
+| 2 | `POST /api/auth/verify-reset-code` | Verificar código recibido |
+| 3 | `POST /api/auth/reset-password` | Establecer nueva contraseña |
 
-### Solicitar Recuperación de Contraseña
+### Requisitos
+
+- Usuario debe estar verificado (`user.isVerified = true`)
+- Código de 8 caracteres alfanuméricos
+- Expiración: 15 minutos
+- Rate limiting: 1 solicitud cada 15 minutos
+
+---
+
+### Paso 1: Solicitar Código de Recuperación
 
 Envía un token de recuperación al email del usuario.
 
@@ -845,26 +858,22 @@ Envía un token de recuperación al email del usuario.
 
 **Response - Éxito (200):**
 ```json
-"Código de recuperación enviado a tu email"
-```
-
-**Response - Error (400):**
-```json
 {
-  "status": 400,
-  "message": "Primero debes verificar tu cuenta antes de recuperar la contraseña",
-  "timestamp": "2026-04-11T10:00:00"
+  "message": "Si el email está registrado y verificado, recibirás un código de recuperación",
+  "success": true
 }
 ```
 
-**Response - Error (400) - Rate limit:**
+**Response - Rate limit (200):**
 ```json
 {
-  "status": 400,
   "message": "Ya solicitaste un código de recuperación. Espera 15 minutos e intenta de nuevo.",
-  "timestamp": "2026-04-11T10:00:00"
+  "success": false
 }
 ```
+
+**Nota de seguridad:** Para proteger la existencia de cuentas, siempre se retorna el mismo mensaje.
+Si el email no está registrado o no está verificado, también se retorna éxito aparente.
 
 **Response - Error (404):**
 ```json
@@ -877,42 +886,78 @@ Envía un token de recuperación al email del usuario.
 
 ---
 
-### Reestablecer Contraseña
+### Paso 2: Verificar Código de Recuperación
 
-Actualiza la contraseña usando el token de recuperación.
+Verifica el código recibido por email.
+
+**Endpoint:** `POST /api/auth/verify-reset-code`
+
+**Request:**
+```json
+{
+  "code": "A3B7K9M2"
+}
+```
+
+**Response - Éxito (200):**
+```json
+{
+  "message": "Código verificado correctamente",
+  "success": true
+}
+```
+
+**Response - Error (200):**
+```json
+{
+  "message": "Código inválido o expirado",
+  "success": false
+}
+```
+
+---
+
+### Paso 3: Establecer Nueva Contraseña
+
+Establece la nueva contraseña después de verificar el código.
 
 **Endpoint:** `POST /api/auth/reset-password`
 
 **Request:**
 ```json
 {
-  "token": "A3B7K9M2",
+  "email": "jose@example.com",
   "newPassword": "nuevaContrasena123"
 }
 ```
 
 **Response - Éxito (200):**
 ```json
-"Contraseña actualizada correctamente"
-```
-
-**Response - Error (400) - Token inválido:**
-```json
 {
-  "status": 400,
-  "message": "Token inválido o expirado",
-  "timestamp": "2026-04-11T10:00:00"
+  "message": "Contraseña actualizada correctamente",
+  "success": true
 }
 ```
 
-**Response - Error (400) - Intentos agotados:**
+**Response - Error (200):**
 ```json
 {
-  "status": 400,
-  "message": "Has excedido los intentos máximos. Solicita un nuevo código de recuperación.",
-  "timestamp": "2026-04-11T10:00:00"
+  "message": "Usuario no encontrado",
+  "success": false
 }
 ```
+
+---
+
+### Notas de Seguridad
+
+1. **Protección de enumeración de usuarios:** El endpoint `forgot-password` siempre retorna éxito, sin revelar si el email existe.
+
+2. **Código single-use:** El código se elimina de Redis al verificarlo, evitando reutilización.
+
+3. **Rate limiting:** Solo 1 solicitud cada 15 minutos por email.
+
+4. **Expiración:** El código expira en 15 minutos.
 
 ---
 
