@@ -2,6 +2,7 @@ package com.technopartner.todo_app.service.otp;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.scheduling.annotation.Async;
@@ -14,10 +15,14 @@ public class OtpEmailService {
     
     private final JavaMailSender mailSender;
     
+    @Value("${spring.mail.from:onboarding@resend.dev}")
+    private String fromEmail;
+    
     @Async
     public void sendOtpEmail(String email, String otp) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
             message.setTo(email);
             message.setSubject("Código de verificación - TechnoPartner");
             message.setText(String.format(
@@ -38,6 +43,7 @@ public class OtpEmailService {
     public void sendPasswordResetEmail(String email, String resetToken) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
             message.setTo(email);
             message.setSubject("Recuperación de contraseña - TechnoPartner");
             message.setText(String.format(

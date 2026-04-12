@@ -32,6 +32,7 @@ spring:
           starttls:
             enable: true
             required: true
+    from: ${MAIL_FROM:onboarding@resend.dev}
 
 server:
   port: ${PORT:9090}
