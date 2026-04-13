@@ -1,5 +1,5 @@
 # Build stage
-FROM maven:21-eclipse-temurin-alpine AS build
+FROM maven:3.9-eclipse-temurin-21-alpine AS build
 WORKDIR /app
 
 COPY pom.xml .
@@ -30,7 +30,7 @@ ENV JWT_ACCESS_TOKEN_EXPIRATION=900000
 RUN mvn clean package -DskipTests
 
 # Runtime stage
-FROM eclipse-temurin:21-jre-alpine
+FROM amazoncorretto:21
 WORKDIR /app
 
 COPY --from=build /app/target/*.jar app.jar
