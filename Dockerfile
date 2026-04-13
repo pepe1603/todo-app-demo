@@ -2,8 +2,9 @@
 FROM amazoncorretto:21 AS build
 WORKDIR /app
 
-# Install Maven 3.9+
-RUN curl -sL https://archive.apache.org/dist/maven/maven-3/3.9.9/binaries/apache-maven-3.9.9-bin.tar.gz | tar -xz && \
+# Install required tools
+RUN yum install -y tar curl && \
+    curl -sL https://archive.apache.org/dist/maven/maven-3/3.9.9/binaries/apache-maven-3.9.9-bin.tar.gz | tar -xz && \
     mv apache-maven-3.9.9 /opt/maven && \
     ln -s /opt/maven/bin/mvn /usr/bin/mvn
 
