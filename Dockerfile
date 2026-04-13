@@ -1,12 +1,14 @@
 # Build stage
-FROM amazoncorretto:21 AS build
+FROM ubuntu:24.04 AS build
 WORKDIR /app
 
-# Install required tools
-RUN yum install -y tar curl && \
-    curl -sL https://archive.apache.org/dist/maven/maven-3/3.9.9/binaries/apache-maven-3.9.9-bin.tar.gz | tar -xz && \
-    mv apache-maven-3.9.9 /opt/maven && \
-    ln -s /opt/maven/bin/mvn /usr/bin/mvn
+# Update and install Maven and Java
+RUN apt-get update && apt-get install -y \
+    maven \
+    openjdk-21-jdk \
+    curl && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 COPY pom.xml .
 COPY src ./src
@@ -14,8 +16,14 @@ COPY src ./src
 RUN mvn clean package -DskipTests
 
 # Runtime stage
-FROM amazoncorretto:21
+FROM ubuntu:24.04
 WORKDIR /app
+
+# Install Java JRE only
+RUN apt-get update && apt-get install -y \
+    openjdk-21-jre-headless && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /app/target/*.jar app.jar
 
